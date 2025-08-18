@@ -8,6 +8,43 @@ import java.nio.file.Files
 // class s
 // val appDirectory: String = File(s::class.java.getProtectionDomain().codeSource.location.toURI()).path
 
+/**
+ * Renames files in a directory.
+ *
+ * Usage:
+ * ```
+ * rname <directory_path> undo | <regex_to_replace> [replacement_string = '']
+ * ```
+ *
+ * - `rname`              : name of the program
+ * - `directory_path`     : path of the directory that files will be renamed that exist into it
+ * - `undo`               : undo the last operation in the entered `directory_path`
+ * - `regex_to_replace`   : regex to match the file names
+ * - `replacement_string` : string to replace with matched parts. Default is empty string.
+ *
+ * Example:
+ * ```
+ * rname test [0-9] _
+ * ```
+ *
+ * - `test` : is the relative directory. It can be absolute or relative.
+ * - `[0-9]` : regex to match the file names. It matches any digit.
+ * - `_` : string to replace with. It can be omited to empty string. Empty string means removing the matched part.
+ *
+ * There is a file named `1t2e3s4t5.txt` in the `test` directory.
+ * It will be renamed to `_t_e_s_t_.txt` according to above example.
+ * All operations are saved in a json file in the system temp directory.
+ * If you type
+ *
+ * ```
+ * rname <directory_path> undo
+ * ```
+ * it will undo the last operation and deletes the backup file.
+ * `Last operation` means the last usage of the `rname` program in the `directory_path`.
+ * On the last usage maybe 100 files are renamed, `undo` will undo 100 files then.
+ *
+ * @param args command line arguments
+ */
 fun main(vararg args: String) {
 	if (args.size < 2) {
 		println("Usage : rname <directory_path> undo | <regex_to_replace> [replacement_string = '']")
@@ -20,11 +57,11 @@ fun main(vararg args: String) {
 		return
 	}
 	
-	if (args[1] == "undo") {
-		undo(workingDirectory)
-		return
-	}
-	
+	if (args[1] == "undo") undo(workingDirectory)
+	else process(workingDirectory, *args)
+}
+
+private fun process(workingDirectory: File, vararg args: String) {
 	val regex = args[1].toRegex()
 	val replacement = if (args.size > 2) args[2] else ""
 	val files = workingDirectory.listFiles() ?: emptyArray()
@@ -98,7 +135,7 @@ private fun rename(directory: File, oldName: String, newName: String): Boolean {
 	return false
 }
 
-fun getTempDirectory() = File(System.getProperty("java.io.tmpdir"))
+private fun getTempDirectory() = File(System.getProperty("java.io.tmpdir"))
 
 @Serializable
 data class Backup(val directory: String, val pairs: List<Pair<String, String>>)
