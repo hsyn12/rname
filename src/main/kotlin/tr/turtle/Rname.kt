@@ -46,24 +46,50 @@ import java.nio.file.Files
  * @param args command line arguments
  */
 fun main(vararg args: String) {
-	if (args.size < 2) {
-		println("Usage : rname <directory_path> undo | <regex_to_replace> [replacement_string = '']")
-		return
-	}
-	
-	val workingDirectory = File(args[0])
-	if (!workingDirectory.isDirectory) {
-		println("Invalid directory path: ${args[0]}")
-		return
-	}
-	
-	if (args[1] == "undo") undo(workingDirectory)
-	else process(workingDirectory, *args)
+	handleArgs(args)
 }
 
-private fun process(workingDirectory: File, vararg args: String) {
-	val regex = args[1].toRegex()
-	val replacement = if (args.size > 2) args[2] else ""
+fun handleArgs(args: Array<out String>) {
+	if (args.isEmpty()) {
+		println(USAGE)
+		return
+	}
+	
+	val workingDirectory = if (args.contains("-d")) File(args[args.indexOf("-d") + 1]) else File(".")
+	if (!workingDirectory.isDirectory) {
+		println("Invalid directory path: ${workingDirectory.absolutePath}")
+		return
+	}
+	
+	if (args.contains("undo")) undo(workingDirectory)
+	else {
+		val index = args.indexOf("-d")
+		if (index == -1) {
+			val replacement = if (args.size >= 2) args[1] else ""
+			process(workingDirectory, args[0], replacement)
+		}
+		else {
+			val _args = args.withIndex().filter {it.index != index && it.index != (index + 1)}.map {it.value}
+			if (_args.isEmpty()) {
+				println(USAGE)
+				return
+			}
+			val replacemnet = if (_args.size >= 2) _args[1] else ""
+			process(workingDirectory, _args[0], replacemnet)
+		}
+	}
+}
+
+val USAGE = """
+Usage : rname [-d <directory_path>] undo | <regex_to_match> [replacement_string = '']
+-d <directory_path>  : directory path
+undo                 : undo the last operation in the directory
+<regex_to_match>     : regex to match the file names
+<replacement_string> : string to replace with matched parts. Default is empty string.
+""".trimIndent()
+
+private fun process(workingDirectory: File, regex: String, replacement: String) {
+	val regex = regex.toRegex()
 	val files = workingDirectory.listFiles() ?: emptyArray()
 	var count = 0
 	val backups = mutableListOf<Pair<String, String>>()
@@ -72,6 +98,10 @@ private fun process(workingDirectory: File, vararg args: String) {
 		val extension = file.extension
 		if (baseName.contains(regex)) {
 			val newName = baseName.replace(regex, replacement)
+			if (newName.isBlank()) {
+				println("Blank name didn't set:\n\t$baseName")
+				continue
+			}
 			if (file.name != newName) {
 				val success = rename(workingDirectory, file.name, "$newName.$extension")
 				if (success) {
@@ -87,8 +117,9 @@ private fun process(workingDirectory: File, vararg args: String) {
 		File(getTempDirectory(), "${backupName}.json")
 				.also {it.createNewFile()}.writeText(json)
 	}
-	println("$count files are processed by `${args[1]}`")
-	println("to undo : rname <directory_path> undo")
+	println("$count files are processed by `$regex`")
+	if (count != 0)
+		println("to undo : rname undo [-d <directory_path>]")
 }
 
 private fun undo(directory: File) {
