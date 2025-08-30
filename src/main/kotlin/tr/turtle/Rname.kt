@@ -13,7 +13,7 @@ import java.nio.file.Files
  *
  * Usage:
  * ```
- * rname <directory_path> undo | <regex_to_replace> [replacement_string = '']
+ * rname [-d <directory_path>] undo | <regex_to_replace> [replacement_string = '']
  * ```
  *
  * - `rname`              : name of the program
@@ -24,7 +24,7 @@ import java.nio.file.Files
  *
  * Example:
  * ```
- * rname test [0-9] _
+ * rname -d test [0-9] _
  * ```
  *
  * - `test` : is the relative directory. It can be absolute or relative.
@@ -37,11 +37,24 @@ import java.nio.file.Files
  * If you type
  *
  * ```
- * rname <directory_path> undo
+ * rname -d <directory_path> undo
  * ```
  * it will undo the last operation and deletes the backup file.
  * `Last operation` means the last usage of the `rname` program in the `directory_path`.
  * On the last usage maybe 100 files are renamed, `undo` will undo 100 files then.
+ *
+ * If directory is not specified, current directory is used.
+ *
+ * Example:
+ * ```
+ * rname [0-9] _
+ * ```
+ *
+ * Same is true for `undo`.
+ *
+ * ```
+ * rname undo
+ * ```
  *
  * @param args command line arguments
  */
