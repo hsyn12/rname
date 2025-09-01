@@ -107,6 +107,7 @@ private fun process(workingDirectory: File, regex: String, replacement: String) 
 	var count = 0
 	val backups = mutableListOf<Pair<String, String>>()
 	for (file in files) {
+		if (file.isDirectory) continue
 		val baseName = file.nameWithoutExtension
 		val extension = file.extension
 		if (baseName.contains(regex)) {
